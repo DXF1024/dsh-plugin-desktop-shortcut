@@ -5,7 +5,7 @@
  *
  * Usage: node tests/smoke.mjs
  */
-import { mkdtempSync, existsSync, rmSync } from 'node:fs'
+import { mkdtempSync, existsSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { apply } from '../src/index.js'
@@ -13,6 +13,7 @@ import { apply } from '../src/index.js'
 const tmp = mkdtempSync(path.join(tmpdir(), 'dsh-shortcut-test-'))
 const launcherPath = path.join(tmp, 'start-dsh-web.cmd')
 const desktopPath = path.join(tmp, 'DSH Web.lnk')
+const TEST_PORT = 55999 // unlikely to be in use -> status probe returns "not running"
 
 /** Minimal fake Cordis context. */
 function fakeCtx() {
@@ -31,7 +32,7 @@ function fakeCtx() {
   }
 }
 
-function runHandler(def, rawInput) {
+async function runHandler(def, rawInput) {
   return def.handler({ rawInput, agent: { id: 'smoke' } })
 }
 
@@ -48,41 +49,45 @@ check('exports apply', typeof m.apply === 'function')
 
 // ---- 2. apply with temp config ----
 const ctx = fakeCtx()
-apply(ctx, { dshDir: tmp, launcherPath, desktopPath, desktopName: 'DSH Web', autoInstall: true })
+apply(ctx, {
+  dshDir: tmp,
+  launcherPath,
+  desktopPath,
+  desktopName: 'DSH Web',
+  port: TEST_PORT,
+  autoInstall: true,
+})
 check('registered 2 ready handlers', ctx.ready.length === 2)
 
-// ---- 3. status BEFORE ready (nothing created yet) ----
-// (ready handlers are captured but not yet run; nothing exists)
-let res = null
-// simulate a manual /shortcut status before the auto-install fires
-// -> call the registered handler if available, else skip (registration happens on ready)
-if (ctx.registered()) {
-  res = runHandler(ctx.registered(), 'status')
-  check('status (pre-ready) returns success', res.kind === 'success')
-  check('status (pre-ready) mentions missing', /missing/.test(res.text))
-} else {
-  console.log('⚠️ command not yet registered (expected: registration runs on ready)')
-}
-
-// ---- 4. fire ready handlers (auto-install + command registration) ----
+// ---- 3. fire ready handlers (auto-install + command registration) ----
 for (const fn of ctx.ready) await fn()
 check('command registered after ready', ctx.registered()?.name === 'shortcut')
 check('auto-install wrote launcher', existsSync(launcherPath))
 check('auto-install created .lnk', existsSync(desktopPath))
 
-// ---- 5. status after install ----
-res = runHandler(ctx.registered(), 'status')
-check('status returns success', res.kind === 'success')
-check('status shows exists', /exists/.test(res.text))
+// ---- 4. launcher content: port guard + browser open ----
+const launcher = readFileSync(launcherPath, 'utf8')
+check('launcher has duplicate-run guard', /Get-NetTCPConnection/.test(launcher) && new RegExp(String(TEST_PORT)).test(launcher))
+check('launcher auto-opens browser', /Start-Process/.test(launcher) && new RegExp(`127\\.0\\.0\\.1:${TEST_PORT}`).test(launcher))
 
-// ---- 6. remove ----
-res = runHandler(ctx.registered(), 'remove')
+// ---- 5. status (server not running on the test port) ----
+let res = await runHandler(ctx.registered(), 'status')
+check('status returns success', res.kind === 'success')
+check('status shows shortcut exists', /exists/.test(res.text))
+check('status reports server not running', /not running/.test(res.text))
+
+// ---- 6. install again (idempotent refresh) ----
+res = await runHandler(ctx.registered(), 'install')
+check('re-install returns success', res.kind === 'success')
+
+// ---- 7. remove ----
+res = await runHandler(ctx.registered(), 'remove')
 check('remove returns success', res.kind === 'success')
 check('launcher removed', !existsSync(launcherPath))
 check('shortcut removed', !existsSync(desktopPath))
 
-// ---- 7. unknown subcommand ----
-res = runHandler(ctx.registered(), 'explode')
+// ---- 8. unknown subcommand ----
+res = await runHandler(ctx.registered(), 'explode')
 check('unknown subcommand -> error', res.kind === 'error')
 
 rmSync(tmp, { recursive: true, force: true })
