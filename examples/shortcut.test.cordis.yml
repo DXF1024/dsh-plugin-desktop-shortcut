@@ -1,0 +1,17 @@
+# Test overlay for dsh-plugin-desktop-shortcut.
+# Runs the web UI on port 3099 so it never collides with the live instance on 3080.
+# Usage: pnpm dsh web --patch shortcut.test.cordis.yml
+- id: webserver
+  config:
+    host: 127.0.0.1
+    port: 3099
+
+- insert:
+    - id: desktop-shortcut
+      name: 'dsh-plugin-desktop-shortcut'
+      config:
+        dshDir: 'C:\AAADXF\DSH\deepseek-harness-master'
+        launcherPath: 'C:\AAADXF\DSH\start-dsh-web.cmd'
+        port: 3080
+        desktopName: 'DSH Web'
+        autoInstall: true

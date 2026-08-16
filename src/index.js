@@ -122,7 +122,7 @@ function renderLauncher(options, pnpm) {
     lines.push(
       `powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort ${options.port} -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"`,
       'if %errorlevel%==0 (',
-      '  echo [DSH] Web 已在运行: %URL%，直接打开浏览器...',
+      `  echo [DSH] Web is already running: %URL% - opening browser...`,
       '  start "" "%URL%"',
       '  exit /b 0',
       ')',
@@ -130,8 +130,8 @@ function renderLauncher(options, pnpm) {
     )
   }
   lines.push(
-    `echo [DSH] 正在启动 DeepSeek Harness Web (%URL%) ...`,
-    'echo [DSH] 保持本窗口开启即可使用；关闭窗口将停止服务。',
+    `echo [DSH] Starting DeepSeek Harness Web (%URL%) ...`,
+    'echo [DSH] Keep this window open while you use the web UI; closing it stops the service.',
     '',
   )
   if (options.openBrowser) {
@@ -145,7 +145,7 @@ function renderLauncher(options, pnpm) {
     `"${pnpm}" dsh web`,
     '',
     'echo.',
-    'echo [DSH] 服务已停止。',
+    'echo [DSH] Service stopped.',
     'pause',
     '',
   )
@@ -285,29 +285,51 @@ async function handleShortcutCommand(options, invocation) {
  */
 export function apply(ctx, config) {
   const options = resolveOptions(config)
+  let installed = false
+  let registered = false
 
-  // Auto-install once the application is ready (best effort).
-  ctx.on('ready', () => {
-    if (!IS_WIN || !options.autoInstall) return
+  // Auto-install (best effort). Runs immediately at mount — do not rely on
+  // 'ready', which some profiles (e.g. the web app) never emit for plugins.
+  const runAutoInstall = () => {
+    if (installed || !IS_WIN || !options.autoInstall) return
     try {
       const result = installShortcut(options)
+      installed = true
       if (ctx.logger) ctx.logger.info(`desktop-shortcut: ${result.text}`)
     } catch (error) {
       if (ctx.logger) {
         ctx.logger.warn(`desktop-shortcut: auto-install failed: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
-  })
+  }
 
   // Register the /shortcut command when the commands service is composed.
-  ctx.on('ready', () => {
-    const commands = /** @type {{register?: (d: unknown) => unknown} | undefined} */ (ctx.commands)
+  // NOTE: this Cordis fork throws on plain property access when the service is
+  // absent, so probe availability with try/catch instead of `ctx.commands?.`.
+  const registerCommand = () => {
+    if (registered) return
+    let commands
+    try {
+      commands = ctx.commands
+    } catch {
+      return // commands service is not composed in this profile (e.g. web)
+    }
     if (!commands || typeof commands.register !== 'function') return
+    registered = true
     commands.register({
       name: 'shortcut',
       description: 'install, remove, or check the DSH web desktop shortcut (Windows)',
       input: { hint: '[install|remove|status]' },
       handler: invocation => handleShortcutCommand(options, invocation),
     })
+  }
+
+  runAutoInstall()
+  registerCommand()
+
+  // Fallback: services such as `commands` may only be available after ready.
+  ctx.on('ready', () => {
+    runAutoInstall()
+    registerCommand()
   })
 }

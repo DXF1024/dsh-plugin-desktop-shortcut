@@ -57,7 +57,7 @@ apply(ctx, {
   port: TEST_PORT,
   autoInstall: true,
 })
-check('registered 2 ready handlers', ctx.ready.length === 2)
+check('registered ready fallback handler', ctx.ready.length >= 1)
 
 // ---- 3. fire ready handlers (auto-install + command registration) ----
 for (const fn of ctx.ready) await fn()
