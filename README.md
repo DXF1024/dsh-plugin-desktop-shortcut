@@ -30,30 +30,56 @@ A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) plug
 
 ## Install
 
+> Windows only. The plugin is not published to npm yet — install it straight
+> from this GitHub repo.
+
+### 1. Install the package into your dsh profile
+
+dsh ships a plugin manager that runs pnpm inside the profile directory:
+
 ```sh
-# from this repo (local) or after publishing to npm
-pnpm add dsh-plugin-desktop-shortcut
-# or: npm i dsh-plugin-desktop-shortcut
+# web profile (this plugin's main target):
+pnpm dsh plugin --profile web add git+https://github.com/DXF1024/dsh-plugin-desktop-shortcut.git
+# or the TUI profile (for the /shortcut command):
+pnpm dsh plugin --profile tui add git+https://github.com/DXF1024/dsh-plugin-desktop-shortcut.git
 ```
 
-Add the plugin to your dsh composition with a patch overlay
-(see `examples/shortcut.cordis.yml`):
+### 2. Declare it in the profile's patch layer
+
+Append to `~/.dsh/profiles/web/cordis.patch.yml` (it is an empty list by default):
 
 ```yaml
-# shortcut.cordis.yml
 - insert:
     - id: desktop-shortcut
       name: 'dsh-plugin-desktop-shortcut'
+      config:
+        autoInstall: true
+        # dshDir: 'C:\path\to\your\dsh-checkout'   # default: process.cwd()
+        # desktopName: 'DSH Web'
+        # iconPath: 'C:\path\to\custom.ico'
 ```
 
-Run dsh with the patch:
+### 3. Restart dsh
 
 ```sh
-dsh web --patch shortcut.cordis.yml
+pnpm dsh web
 ```
 
-For the TUI, add the same `- name: 'dsh-plugin-desktop-shortcut'` entry to your
-TUI cordis composition.
+From now on every start creates/refreshes a **"DSH Web"** desktop shortcut
+(whale-girl icon included). TUI users get the `/shortcut` command instead.
+
+> **Troubleshooting for other machines**:
+> - The loader resolves plugin packages from the profile directory
+>   (`~/.dsh/profiles/web/`), so the package must be installed there via
+>   `dsh plugin --profile web add` — installing it into the dsh checkout's own
+>   `node_modules` does NOT work.
+> - On machines with a **system proxy** (e.g. Clash), `dsh plugin add` may fail
+>   with `Unsupported proxy syntax` because the CLI forwards the raw Windows
+>   proxy (`127.0.0.1:7897`, no scheme) to git. Workaround — run pnpm directly
+>   in the profile directory:
+>   ```sh
+>   cd ~/.dsh/profiles/web && pnpm add git+https://github.com/DXF1024/dsh-plugin-desktop-shortcut.git
+>   ```
 
 ## Configuration
 

@@ -25,28 +25,54 @@
 
 ## 安装
 
+> 仅支持 Windows。插件**尚未发布到 npm**，直接从本 GitHub 仓库安装即可。
+
+### 1. 把插件装进你的 dsh profile
+
+dsh 自带插件管理器（在 profile 目录里执行 pnpm）：
+
 ```sh
-# 本地安装或发布到 npm 后
-pnpm add dsh-plugin-desktop-shortcut
-# 或：npm i dsh-plugin-desktop-shortcut
+# web 配置（本插件的主要目标）：
+pnpm dsh plugin --profile web add git+https://github.com/DXF1024/dsh-plugin-desktop-shortcut.git
+# 或 TUI 配置（用于 /shortcut 命令）：
+pnpm dsh plugin --profile tui add git+https://github.com/DXF1024/dsh-plugin-desktop-shortcut.git
 ```
 
-用 patch overlay 把插件加进 dsh 组合（参考 `examples/shortcut.cordis.yml`）：
+### 2. 在 profile 的补丁层声明插件
+
+在 `~/.dsh/profiles/web/cordis.patch.yml` 末尾追加（默认是空列表）：
 
 ```yaml
-# shortcut.cordis.yml
 - insert:
     - id: desktop-shortcut
       name: 'dsh-plugin-desktop-shortcut'
+      config:
+        autoInstall: true
+        # dshDir: 'C:\path\to\your\dsh-checkout'   # 默认: process.cwd()
+        # desktopName: 'DSH Web'
+        # iconPath: 'C:\path\to\custom.ico'
 ```
 
-带 patch 启动：
+### 3. 重启 dsh
 
 ```sh
-dsh web --patch shortcut.cordis.yml
+pnpm dsh web
 ```
 
-TUI 用户：在你的 TUI cordis 组合里同样加一行 `- name: 'dsh-plugin-desktop-shortcut'` 即可。
+之后每次启动都会自动创建/刷新桌面「DSH Web」快捷方式（自带鲸鱼娘图标）。
+TUI 用户则是多了 `/shortcut` 命令。
+
+> **给其他机器排障**：
+> - dsh 的 loader 从 **profile 目录**（`~/.dsh/profiles/web/`）向上解析插件包，
+>   所以必须用 `dsh plugin --profile web add` 装到那里——只装进 dsh 检出目录自己的
+>   `node_modules` 是**不会生效**的。
+> - **开了系统代理**（如 Clash）的机器上，`dsh plugin add` 可能报
+>   `Unsupported proxy syntax`——dsh CLI 会把 Windows 注册表里的代理原样传下去
+>   （`127.0.0.1:7897`，没有协议头）导致 git 报错。解决办法：直接在 profile 目录里
+>   手动执行 pnpm：
+>   ```sh
+>   cd ~/.dsh/profiles/web && pnpm add git+https://github.com/DXF1024/dsh-plugin-desktop-shortcut.git
+>   ```
 
 ## 配置项
 
