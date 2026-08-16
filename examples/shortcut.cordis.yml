@@ -1,0 +1,10 @@
+# Example dsh patch overlay: enable dsh-plugin-desktop-shortcut
+# Usage: dsh web --patch shortcut.cordis.yml
+- insert:
+    - id: desktop-shortcut
+      name: 'dsh-plugin-desktop-shortcut'
+      config:
+        dshDir: 'C:\AAADXF\DSH\deepseek-harness-master'
+        port: 3080
+        desktopName: 'DSH Web'
+        autoInstall: true
