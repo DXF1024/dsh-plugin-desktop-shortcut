@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-desktop-shortcut",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "DSH plugin: create a Windows desktop shortcut that launches `dsh web` with one double-click (cute DeepSeek whale-girl icon, duplicate-run guard, auto-open browser, /shortcut command).",
   "type": "module",
   "main": "src/index.js",
