@@ -71,8 +71,10 @@ const launcher = readFileSync(launcherPath, 'utf8')
 check('launcher has duplicate-run guard', /Get-NetTCPConnection/.test(launcher) && new RegExp(String(TEST_PORT)).test(launcher))
 check('launcher auto-opens browser', /Start-Process/.test(launcher) && new RegExp(`127\\.0\\.0\\.1:${TEST_PORT}`).test(launcher))
 // cmd.exe cannot execute bare .mjs/.js — must use a .cmd/.exe shim or `node <script>`.
+// And a .cmd shim must be invoked with `call`, otherwise the outer batch exits early.
 const launchLine = launcher.split(/\r?\n/).find((l) => / dsh web/.test(l))
 check('launcher pnpm is executable (no bare .mjs)', Boolean(launchLine) && !/\.mjs" dsh web/.test(launchLine))
+check('launcher uses call before the .cmd shim', Boolean(launchLine) && /^call /.test(launchLine.trim()))
 
 // ---- 5. .lnk fields must be single-backslash paths (JSON.stringify bug guard) ----
 {

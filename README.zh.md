@@ -89,7 +89,7 @@ TUI 用户则是多了 `/shortcut` 命令。
 | `iconPath` | string | 内置鲸鱼娘图标 | 自定义 `.ico` 图标路径（留空用系统默认） |
 | `openBrowser` | boolean | `true` | 启动后自动打开浏览器 |
 | `preventDuplicate` | boolean | `true` | 已运行时不再重复启动 |
-| `browserDelaySec` | number | `4` | 启动后多少秒打开浏览器 |
+| `browserDelaySec` | number | `60` | 轮询端口等待服务器就绪的最长秒数（冷启动可能很慢） |
 
 示例：
 

@@ -12,5 +12,8 @@ apply(fakeCtx, {
   port: 3080,
   desktopName: 'DSH Web',
   autoInstall: true,
+  openBrowser: true,
+  preventDuplicate: true,
+  browserDelaySec: 60,
 })
 console.log('regen done')

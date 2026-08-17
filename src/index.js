@@ -72,7 +72,7 @@ function resolveOptions(config = {}) {
     iconPath: iconPath && existsSync(iconPath) ? iconPath : undefined,
     openBrowser: config.openBrowser !== false,
     preventDuplicate: config.preventDuplicate !== false,
-    browserDelaySec: Number(config.browserDelaySec ?? 4),
+    browserDelaySec: Math.max(1, Number(config.browserDelaySec ?? 60)),
   }
 }
 
@@ -156,13 +156,17 @@ function renderLauncher(options, pnpm) {
   )
   if (options.openBrowser) {
     lines.push(
-      'REM --- auto-open the browser after the server has had time to boot ---',
-      `start "" /min powershell.exe -NoProfile -Command "Start-Sleep -Seconds ${options.browserDelaySec}; Start-Process '${options.webUrl}'"`,
+      'REM --- wait for the server to come up, then open the browser (poll the port) ---',
+      'REM (a fixed delay opens the browser too early on cold starts; polling waits until it actually listens)',
+      `start "" /min powershell.exe -NoProfile -Command "$u='${options.webUrl}'; for($i=0;$i -lt ${Math.max(1, options.browserDelaySec)};$i++){ $c=Get-NetTCPConnection -LocalPort ${options.port} -State Listen -ErrorAction SilentlyContinue; if($c){ Start-Sleep -Seconds 2; Start-Process $u; break }; Start-Sleep -Seconds 1 }"`,
       '',
     )
   }
   lines.push(
-    launch,
+    // `call` is REQUIRED: invoking a .cmd from a batch without call makes the
+    // outer script exit as soon as the inner one finishes (window closes and
+    // the trailing echo/pause never run).
+    `call ${launch}`,
     '',
     'echo.',
     'echo [DSH] Service stopped.',
@@ -236,7 +240,7 @@ function installShortcut(options) {
       `  URL:      ${options.webUrl}`,
       options.iconPath ? `  Icon:     ${options.iconPath}` : '  Icon:     (default)',
       `  Guard:    ${options.preventDuplicate ? 'duplicate-run check on' : 'off'}`,
-      `  Browser:  ${options.openBrowser ? `auto-open after ${options.browserDelaySec}s` : 'off'}`,
+      `  Browser:  ${options.openBrowser ? `auto-open once the server listens (poll up to ${options.browserDelaySec}s)` : 'off'}`,
       created ? '' : 'The shortcut already existed and was refreshed.',
     ].filter(Boolean).join('\n'),
   }

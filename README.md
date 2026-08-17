@@ -96,7 +96,7 @@ All fields are optional.
 | `iconPath` | string | bundled whale-girl icon | Custom `.ico` path (empty = system default) |
 | `openBrowser` | boolean | `true` | Auto-open the browser after startup |
 | `preventDuplicate` | boolean | `true` | Don't start a second instance if already running |
-| `browserDelaySec` | number | `4` | Seconds to wait before opening the browser |
+| `browserDelaySec` | number | `60` | Max seconds to poll the port before opening the browser (server cold starts can be slow) |
 
 Example:
 
