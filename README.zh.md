@@ -1,5 +1,11 @@
 # dsh-plugin-desktop-shortcut
 
+[![version](https://img.shields.io/github/v/release/DXF1024/dsh-plugin-desktop-shortcut)](https://github.com/DXF1024/dsh-plugin-desktop-shortcut/releases)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![platform](https://img.shields.io/badge/platform-Windows-0078D6)](#)
+[![stars](https://img.shields.io/github/stars/DXF1024/dsh-plugin-desktop-shortcut)](https://github.com/DXF1024/dsh-plugin-desktop-shortcut)
+[![issues](https://img.shields.io/github/issues/DXF1024/dsh-plugin-desktop-shortcut)](https://github.com/DXF1024/dsh-plugin-desktop-shortcut/issues)
+[![language](https://img.shields.io/github/languages/top/DXF1024/dsh-plugin-desktop-shortcut)](#)
 [![powered_by_dsh](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
 
 [English](README.md) | 中文
